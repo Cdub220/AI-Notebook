@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import (QApplication, QVBoxLayout, QLabel, QLineEdit,
-                             QPushButton, QMainWindow, QTextEdit, QComboBox, QListWidget)
+from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
+                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout)
 from PyQt6.QtGui import QAction
 import sys
 
@@ -23,6 +23,7 @@ class Notebook(QMainWindow):
         exit_page_action = QAction("Exit", self)
         exit_page_action.setShortcut("Ctrl+E")
         file_menu_item.addAction(create_subject_action)
+        create_subject_action.triggered.connect(self.subject)
         file_menu_item.addAction(create_page_action)
         file_menu_item.addAction(save_page_action)
         file_menu_item.addAction(exit_page_action)
@@ -55,20 +56,39 @@ class Notebook(QMainWindow):
         note_list.addItem("test")
         note_list.setGeometry(40, 140, 255, 729)
 
-    def new_subject(self):
-        pass
+    def subject(self):
+        dialog = CreateSubject()
+        dialog.exec()
 
-    def new_page(self):
-        pass
 
-    def rename(self):
-        pass
+class CreateSubject(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Create Subject")
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
 
-    def delete(self):
-        pass
+        layout = QVBoxLayout()
 
-    def notes(self):
-        pass
+        # Create Subject Input
+        self.subject = QLineEdit(self)
+        self.subject.setPlaceholderText("Subject")
+        layout.addWidget(self.subject)
+
+        # Create Add Button
+        add_button = QPushButton("Add")
+        add_button.clicked.connect(self.add_subject)
+        layout.addWidget(add_button)
+
+        self.setLayout(layout)
+
+    def add_subject(self):
+        subject = self.subject.text()
+        self.close()
+        return subject
+
+
+
 
 
 app = QApplication(sys.argv)

@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
                              QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout)
 from PyQt6.QtGui import QAction
+import json
 import sys
 
 
@@ -57,6 +58,12 @@ class Notebook(QMainWindow):
         note_list.addItem("test")
         note_list.setGeometry(40, 140, 255, 729)
 
+    def load_data(self):
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+        data = json.loads(content)
+        return data
+
     def subject(self):
         dialog = CreateSubject()
         dialog.exec()
@@ -79,6 +86,13 @@ class Notebook(QMainWindow):
         subject_list = subject_list[:-1]
         self.subject_box.addItems(subject_list)
 
+    def subject_list(self):
+        with open("subjects/subject.txt", "r") as file:
+            subject = file.read()
+        subject_list = subject.split(sep=",")
+        subject_list = subject_list[:-1]
+        return subject_list
+
 
 class CreatePage(QDialog):
     def __init__(self):
@@ -89,13 +103,13 @@ class CreatePage(QDialog):
 
         layout = QVBoxLayout()
 
-        subject_box = QComboBox(self)
+        self.subject_box = QComboBox(self)
         with open("subjects/subject.txt", "r") as file:
             subject = file.read()
         subject_list = subject.split(sep=",")
         subject_list = subject_list[:-1]
-        subject_box.addItems(subject_list)
-        layout.addWidget(subject_box)
+        self.subject_box.addItems(subject_list)
+        layout.addWidget(self.subject_box)
 
         self.page = QLineEdit(self)
         self.page.setPlaceholderText("Page Title:")
@@ -108,8 +122,22 @@ class CreatePage(QDialog):
         self.setLayout(layout)
 
     def add_page(self):
-        pass
+        subject_name = self.subject_box.itemText(self.subject_box.currentIndex())
+        subject_list = notebook_app.subject_list()
+        page_name = self.page.text()
+        self.assign_page(subject_list, subject_name, page_name)
+        self.close()
 
+    def assign_page(self, subject_list, subject_name, page_name):
+        subject_dict = {}
+        for subject in subject_list:
+            subject_dict.update({subject: ""})
+            if subject_name == subject:
+                subject_dict[subject] = page_name
+        with open("subjects/data.json", "w") as file:
+            data = str(subject_dict)
+            data_filtered = data.replace("'", '"')
+            file.write(data_filtered)
 
 
 class CreateSubject(QDialog):

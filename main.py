@@ -46,19 +46,19 @@ class Notebook(QMainWindow):
         subject_label.setGeometry(130, 30, 200, 21)
         subject_label.setStyleSheet("text-align: center; font-size:12pt")
 
-        # Create Subject combo box
-        self.subject_box = QComboBox(self)
-        self.load_subjects()
-        self.subject_box.setGeometry(70, 60, 200, 40)
-
         # Create Note Input
         note_area = QTextEdit(self)
         note_area.setGeometry(340, 60, 750, 810)
 
         # Create Note List
         self.note_list = QListWidget(self)
-        self.load_pages()
         self.note_list.setGeometry(40, 140, 255, 729)
+
+        # Create Subject combo box
+        self.subject_box = QComboBox(self)
+        self.subject_box.currentIndexChanged.connect(self.load_pages)
+        self.load_subjects()
+        self.subject_box.setGeometry(70, 60, 200, 40)
 
     def load_pages(self):
         self.note_list.clear()
@@ -67,7 +67,7 @@ class Notebook(QMainWindow):
         if file_size != 0:
             data = self.load_data()
             current_subject = self.subject_box.itemText(self.subject_box.currentIndex())
-            subject_pages = data[current_subject][1:]
+            subject_pages = data[current_subject]
             for page in subject_pages:
                 self.note_list.addItem(page)
 

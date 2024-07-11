@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
                              QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout)
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QPixmap
 import json
 import sys
+import os
 
 
 class Notebook(QMainWindow):
@@ -17,6 +18,7 @@ class Notebook(QMainWindow):
         file_menu_item = self.menuBar().addMenu("&File")
         edit_menu_item = self.menuBar().addMenu("&Edit")
 
+        # (File) Menu Bar
         create_subject_action = QAction("Create Subject", self)
         create_page_action = QAction("Create Page", self)
         save_page_action = QAction("Save", self)
@@ -30,6 +32,7 @@ class Notebook(QMainWindow):
         file_menu_item.addAction(save_page_action)
         file_menu_item.addAction(exit_page_action)
 
+        # (Edit) Menu Bar
         rename_action = QAction("Rename", self)
         delete_action = QAction("Delete", self)
         edit_menu_item.addAction(rename_action)
@@ -39,7 +42,6 @@ class Notebook(QMainWindow):
         note_label = QLabel("Place-holder (Notes)", self)
         note_label.setGeometry(690, 30, 200, 21)
         note_label.setStyleSheet("text-align: center; font-size:12pt")
-
         subject_label = QLabel("Subject", self)
         subject_label.setGeometry(130, 30, 200, 21)
         subject_label.setStyleSheet("text-align: center; font-size:12pt")
@@ -54,9 +56,20 @@ class Notebook(QMainWindow):
         note_area.setGeometry(340, 60, 750, 810)
 
         # Create Note List
-        note_list = QListWidget(self)
-        note_list.addItem("test")
-        note_list.setGeometry(40, 140, 255, 729)
+        self.note_list = QListWidget(self)
+        self.load_pages()
+        self.note_list.setGeometry(40, 140, 255, 729)
+
+    def load_pages(self):
+        self.note_list.clear()
+        data_file = "subjects/data.json"
+        file_size = os.path.getsize(data_file)
+        if file_size != 0:
+            data = self.load_data()
+            current_subject = self.subject_box.itemText(self.subject_box.currentIndex())
+            subject_pages = data[current_subject][1:]
+            for page in subject_pages:
+                self.note_list.addItem(page)
 
     def load_data(self):
         with open("subjects/data.json", "r") as file:
@@ -80,6 +93,7 @@ class Notebook(QMainWindow):
         self.subject_box.addItem(new_subject)
 
     def load_subjects(self):
+        self.subject_box.clear()
         with open("subjects/subject.txt", "r") as file:
             subject = file.read()
         subject_list = subject.split(sep=",")
@@ -129,11 +143,10 @@ class CreatePage(QDialog):
         self.close()
 
     def assign_page(self, subject_list, subject_name, page_name):
-        subject_dict = {}
-        for subject in subject_list:
-            subject_dict.update({subject: ""})
-            if subject_name == subject:
-                subject_dict[subject] = page_name
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+            subject_dict = json.loads(content)
+        subject_dict[subject_name].append(page_name.title())
         with open("subjects/data.json", "w") as file:
             data = str(subject_dict)
             data_filtered = data.replace("'", '"')
@@ -165,8 +178,34 @@ class CreateSubject(QDialog):
         subject = self.subject.text()
         with open("subjects/subject.txt", "a") as file:
             file.write(f"{subject.title()},")
+        self.add_subject_to_data(subject.title())
         notebook_app.new_subject()
         self.close()
+
+    def add_subject_to_data(self, new_subject):
+        data_file = "subjects/data.json"
+        file_size = os.path.getsize(data_file)
+        subject_dict = {}
+        if file_size != 0:
+            subject_dict = self.load_data()
+        with open("subjects/subject.txt", "r") as file:
+            subjects_list = file.read()
+            subjects_list = subjects_list.split(",")
+        for subject in subjects_list:
+            if subject == new_subject:
+                subject_dict[subject] = list()
+        if "" in subject_dict:
+            del subject_dict[""]
+        with open("subjects/data.json", "w") as file:
+            data = str(subject_dict)
+            data_filtered = data.replace("'", '"')
+            file.write(data_filtered)
+
+    def load_data(self):
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+        data = json.loads(content)
+        return data
 
 
 app = QApplication(sys.argv)

@@ -11,6 +11,7 @@ class Notebook(QMainWindow):
         super().__init__()
         self.setWindowTitle("AI Notebook App")
         self.setMinimumSize(1125, 900)
+        self.current_note = {"Subject": "", "Page": ""}
 
         # Create Menu Bar
         menu_bar = self.menuBar()
@@ -23,6 +24,7 @@ class Notebook(QMainWindow):
         create_page_action = QAction("Create Page", self)
         save_page_action = QAction("Save", self)
         save_page_action.setShortcut("Ctrl+S")
+        save_page_action.triggered.connect(self.save_note)
         exit_page_action = QAction("Exit", self)
         exit_page_action.setShortcut("Ctrl+E")
         file_menu_item.addAction(create_subject_action)
@@ -47,11 +49,12 @@ class Notebook(QMainWindow):
         subject_label.setStyleSheet("text-align: center; font-size:12pt")
 
         # Create Note Input
-        note_area = QTextEdit(self)
-        note_area.setGeometry(340, 60, 750, 810)
+        self.note_area = QTextEdit(self)
+        self.note_area.setGeometry(340, 60, 750, 810)
 
         # Create Note List
         self.note_list = QListWidget(self)
+        self.note_list.itemSelectionChanged.connect(self.open_note)
         self.note_list.setGeometry(40, 140, 255, 729)
 
         # Create Subject combo box
@@ -59,6 +62,7 @@ class Notebook(QMainWindow):
         self.subject_box.currentIndexChanged.connect(self.load_pages)
         self.load_subjects()
         self.subject_box.setGeometry(70, 60, 200, 40)
+
 
     def load_pages(self):
         self.note_list.clear()
@@ -70,6 +74,7 @@ class Notebook(QMainWindow):
             subject_pages = data[current_subject]
             for page in subject_pages:
                 self.note_list.addItem(page)
+            self.current_note["Subject"] = current_subject
 
     def load_data(self):
         with open("subjects/data.json", "r") as file:
@@ -106,6 +111,28 @@ class Notebook(QMainWindow):
         subject_list = subject.split(sep=",")
         subject_list = subject_list[:-1]
         return subject_list
+
+    def open_note(self):
+        subject = self.subject_box.itemText(self.subject_box.currentIndex())
+        page = self.note_list.currentItem().text()
+        self.current_note["Page"] = page
+        if not os.path.exists(f"notes/{subject}"):
+            os.makedirs(f"notes/{subject}")
+        if os.path.exists(f"notes/{subject}/{page}"):
+            with open(f"notes/{subject}/{page}", "r") as file:
+                content = file.read()
+            self.note_area.setText(content)
+
+    def save_note(self):
+        subject = self.current_note["Subject"]
+        page = self.current_note["Page"]
+        content = self.note_area.toPlainText()
+        with open(f"notes/{subject}/{page}", "w") as file:
+            file.write(content)
+
+
+
+
 
 
 class CreatePage(QDialog):

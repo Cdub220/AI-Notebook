@@ -27,6 +27,7 @@ class Notebook(QMainWindow):
         save_page_action.triggered.connect(self.save_note)
         exit_page_action = QAction("Exit", self)
         exit_page_action.setShortcut("Ctrl+E")
+        exit_page_action.triggered.connect(exit)
         file_menu_item.addAction(create_subject_action)
         create_subject_action.triggered.connect(self.subject)
         file_menu_item.addAction(create_page_action)
@@ -38,6 +39,7 @@ class Notebook(QMainWindow):
         rename_action = QAction("Rename", self)
         delete_action = QAction("Delete", self)
         edit_menu_item.addAction(rename_action)
+        rename_action.triggered.connect(self.rename)
         edit_menu_item.addAction(delete_action)
 
         # Create UI Labels
@@ -63,7 +65,6 @@ class Notebook(QMainWindow):
         self.load_subjects()
         self.subject_box.setGeometry(70, 60, 200, 40)
 
-
     def load_pages(self):
         self.note_list.clear()
         data_file = "subjects/data.json"
@@ -88,6 +89,10 @@ class Notebook(QMainWindow):
 
     def page(self):
         dialog = CreatePage()
+        dialog.exec()
+
+    def rename(self):
+        dialog = Rename()
         dialog.exec()
 
     def new_subject(self):
@@ -122,6 +127,8 @@ class Notebook(QMainWindow):
             with open(f"notes/{subject}/{page}", "r") as file:
                 content = file.read()
             self.note_area.setText(content)
+        else:
+            self.note_area.clear()
 
     def save_note(self):
         subject = self.current_note["Subject"]
@@ -131,8 +138,43 @@ class Notebook(QMainWindow):
             file.write(content)
 
 
+class Rename(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Rename")
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
 
+        layout = QVBoxLayout()
 
+        self.subject_box_class = QComboBox(self)
+        layout.addWidget(self.subject_box_class)
+        self.subject_box_option = QComboBox(self)
+        layout.addWidget(self.subject_box_option)
+
+        class_list = ["Subject", "Page"]
+        self.subject_box_class.addItems(class_list)
+        self.subject_box_class.currentIndexChanged.connect(self.load_pages)
+
+        self.setLayout(layout)
+        self.load_pages()
+
+    def load_pages(self):
+        class_picked = self.subject_box_class.itemText(self.subject_box_class.currentIndex())
+        self.subject_box_option.clear()
+        subjects = []
+        pages = []
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+            subject_dict = json.loads(content)
+        if class_picked == "Subject":
+            for subject in subject_dict:
+                subjects.append(subject)
+            self.subject_box_option.addItems(subjects)
+        elif class_picked == "Page":
+            for subject in subject_dict:
+                pages += subject_dict[subject]
+            self.subject_box_option.addItems(pages)
 
 
 class CreatePage(QDialog):

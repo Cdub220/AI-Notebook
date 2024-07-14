@@ -77,21 +77,25 @@ class Notebook(QMainWindow):
                 self.note_list.addItem(page)
             self.current_note["Subject"] = current_subject
 
-    def load_data(self):
+    @staticmethod
+    def load_data():
         with open("subjects/data.json", "r") as file:
             content = file.read()
         data = json.loads(content)
         return data
 
-    def subject(self):
+    @staticmethod
+    def subject():
         dialog = CreateSubject()
         dialog.exec()
 
-    def page(self):
+    @staticmethod
+    def page():
         dialog = CreatePage()
         dialog.exec()
 
-    def rename(self):
+    @staticmethod
+    def rename():
         dialog = Rename()
         dialog.exec()
 
@@ -110,7 +114,8 @@ class Notebook(QMainWindow):
         subject_list = subject_list[:-1]
         self.subject_box.addItems(subject_list)
 
-    def subject_list(self):
+    @staticmethod
+    def subject_list():
         with open("subjects/subject.txt", "r") as file:
             subject = file.read()
         subject_list = subject.split(sep=",")
@@ -187,8 +192,8 @@ class Rename(QDialog):
             data_filtered = str(data).replace("'", '"')
             with open("subjects/data.json", "w") as file:
                 file.write(data_filtered)
-            # will need future fix: (If subject folder has not been made yet)
-            os.rename(f"notes/{rename_option}", f"notes/{rename_option_to}")
+            if os.path.exists(f"notes/{rename_option}"):
+                os.rename(f"notes/{rename_option}", f"notes/{rename_option_to}")
         elif class_picked == "Page":
             rename_option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
             option_subject = ""
@@ -203,9 +208,9 @@ class Rename(QDialog):
             data_filtered = str(data).replace("'", '"')
             with open("subjects/data.json", "w") as file:
                 file.write(data_filtered)
-            # will need future fix: (If subject folder has not been made yet)
-            os.rename(f"notes/{option_subject}/{rename_option}",
-                      f"notes/{option_subject}/{rename_option_to}")
+            if os.path.exists(f"notes/{option_subject}/{rename_option}"):
+                os.rename(f"notes/{option_subject}/{rename_option}",
+                          f"notes/{option_subject}/{rename_option_to}")
 
         self.close()
 
@@ -262,12 +267,12 @@ class CreatePage(QDialog):
 
     def add_page(self):
         subject_name = self.subject_box.itemText(self.subject_box.currentIndex())
-        subject_list = notebook_app.subject_list()
         page_name = self.page.text()
-        self.assign_page(subject_list, subject_name, page_name)
+        self.assign_page(subject_name, page_name)
         self.close()
 
-    def assign_page(self, subject_list, subject_name, page_name):
+    @staticmethod
+    def assign_page(subject_name, page_name):
         with open("subjects/data.json", "r") as file:
             content = file.read()
             subject_dict = json.loads(content)
@@ -326,7 +331,8 @@ class CreateSubject(QDialog):
             data_filtered = data.replace("'", '"')
             file.write(data_filtered)
 
-    def load_data(self):
+    @staticmethod
+    def load_data():
         with open("subjects/data.json", "r") as file:
             content = file.read()
         data = json.loads(content)

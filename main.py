@@ -171,6 +171,7 @@ class Rename(QDialog):
         rename_option = ""
         class_picked = self.subject_box_class.itemText(self.subject_box_class.currentIndex())
         rename_option_to = self.rename_to.text()
+        rename_option_to = rename_option_to.title()
         if class_picked == "Subject":
             rename_option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
             with open("subjects/subject.txt", "r") as file:
@@ -188,9 +189,23 @@ class Rename(QDialog):
                 file.write(data_filtered)
             # will need future fix: (If subject folder has not been made yet)
             os.rename(f"notes/{rename_option}", f"notes/{rename_option_to}")
-
         elif class_picked == "Page":
             rename_option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+            option_subject = ""
+            with open("subjects/data.json", "r") as file:
+                content = file.read()
+                data = json.loads(content)
+            for subject in data:
+                if rename_option in data[subject]:
+                    option_subject = subject
+            data[option_subject].remove(rename_option)
+            data[option_subject].append(rename_option_to)
+            data_filtered = str(data).replace("'", '"')
+            with open("subjects/data.json", "w") as file:
+                file.write(data_filtered)
+            # will need future fix: (If subject folder has not been made yet)
+            os.rename(f"notes/{option_subject}/{rename_option}",
+                      f"notes/{option_subject}/{rename_option_to}")
 
         self.close()
 

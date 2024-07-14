@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
-                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout)
+                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout,)
 from PyQt6.QtGui import QAction, QPixmap
 import json
 import sys
@@ -151,15 +151,54 @@ class Rename(QDialog):
         layout.addWidget(self.subject_box_class)
         self.subject_box_option = QComboBox(self)
         layout.addWidget(self.subject_box_option)
+        self.subject_box_option.currentIndexChanged.connect(self.change_input_placeholder)
 
         class_list = ["Subject", "Page"]
         self.subject_box_class.addItems(class_list)
-        self.subject_box_class.currentIndexChanged.connect(self.load_pages)
+        self.subject_box_class.currentIndexChanged.connect(self.load_option)
+
+        self.rename_to = QLineEdit(self)
+        layout.addWidget(self.rename_to)
+
+        rename_button = QPushButton("Rename")
+        rename_button.clicked.connect(self.rename)
+        layout.addWidget(rename_button)
 
         self.setLayout(layout)
-        self.load_pages()
+        self.load_option()
 
-    def load_pages(self):
+    def rename(self):
+        rename_option = ""
+        class_picked = self.subject_box_class.itemText(self.subject_box_class.currentIndex())
+        rename_option_to = self.rename_to.text()
+        if class_picked == "Subject":
+            rename_option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+            with open("subjects/subject.txt", "r") as file:
+                content = file.read()
+            content = content.replace(rename_option, rename_option_to)
+            with open("subjects/subject.txt", "w") as file:
+                file.write(content)
+            with open("subjects/data.json", "r") as file:
+                content = file.read()
+            data = json.loads(content)
+            data[rename_option_to] = data[rename_option]
+            del data[rename_option]
+            data_filtered = str(data).replace("'", '"')
+            with open("subjects/data.json", "w") as file:
+                file.write(data_filtered)
+            # will need future fix: (If subject folder has not been made yet)
+            os.rename(f"notes/{rename_option}", f"notes/{rename_option_to}")
+
+        elif class_picked == "Page":
+            rename_option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+
+        self.close()
+
+    def change_input_placeholder(self):
+        option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+        self.rename_to.setPlaceholderText(f"Rename {option} to:")
+
+    def load_option(self):
         class_picked = self.subject_box_class.itemText(self.subject_box_class.currentIndex())
         self.subject_box_option.clear()
         subjects = []
@@ -175,6 +214,8 @@ class Rename(QDialog):
             for subject in subject_dict:
                 pages += subject_dict[subject]
             self.subject_box_option.addItems(pages)
+        option = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+        self.rename_to.setPlaceholderText(f"Rename {option} to:")
 
 
 class CreatePage(QDialog):

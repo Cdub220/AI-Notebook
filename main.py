@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
-                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout,)
+                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout, QMessageBox)
 from PyQt6.QtGui import QAction, QPixmap
 import json
 import sys
 import os
+
+# background: qlineargradient(x1:0 y1:0, x2:1 y2:1, stop:0 #051c2a stop:1 #44315f);
 
 
 class Notebook(QMainWindow):
@@ -32,12 +34,15 @@ class Notebook(QMainWindow):
         create_subject_action.triggered.connect(self.subject)
         file_menu_item.addAction(create_page_action)
         create_page_action.triggered.connect(self.page)
+        create_page_action.triggered.connect(self.load_pages)
         file_menu_item.addAction(save_page_action)
         file_menu_item.addAction(exit_page_action)
 
         # (Edit) Menu Bar
         rename_action = QAction("Rename", self)
         delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(self.delete)
+        delete_action.triggered.connect(self.load_pages)
         edit_menu_item.addAction(rename_action)
         rename_action.triggered.connect(self.rename)
         edit_menu_item.addAction(delete_action)
@@ -99,6 +104,11 @@ class Notebook(QMainWindow):
         dialog = Rename()
         dialog.exec()
 
+    @staticmethod
+    def delete():
+        dialog = Delete()
+        dialog.exec()
+
     def new_subject(self):
         with open("subjects/subject.txt", "r") as file:
             subject = file.read()
@@ -143,6 +153,72 @@ class Notebook(QMainWindow):
             file.write(content)
 
 
+class Delete(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Delete")
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
+
+        layout = QVBoxLayout()
+
+        self.subject_box = QComboBox(self)
+        layout.addWidget(self.subject_box)
+        self.subject_box.currentIndexChanged.connect(self.load_pages)
+        self.subject_box_option = QComboBox(self)
+        layout.addWidget(self.subject_box_option)
+
+        self.delete_button = QPushButton("Delete Page")
+        self.delete_button.clicked.connect(self.delete_page)
+        layout.addWidget(self.delete_button)
+
+        self.setLayout(layout)
+        self.load_subjects()
+        self.load_pages()
+
+    def load_subjects(self):
+        subject_list = []
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+            data = json.loads(content)
+        for subject in data:
+            subject_list.append(subject)
+        self.subject_box.addItems(subject_list)
+
+    def load_pages(self):
+        self.subject_box_option.clear()
+        current_subject = self.subject_box.itemText(self.subject_box.currentIndex())
+        with open("subjects/data.json", "r") as file:
+            content = file.read()
+            data = json.loads(content)
+        page_list = data[current_subject]
+        self.subject_box_option.addItems(page_list)
+
+    def delete_page(self):
+        subject = self.subject_box.itemText(self.subject_box.currentIndex())
+        page = self.subject_box_option.itemText(self.subject_box_option.currentIndex())
+
+        if self.pop_up():
+            if os.path.exists(f"notes/{subject}/{page}"):
+                os.remove(f"notes/{subject}/{page}")
+
+            with open("subjects/data.json", "r") as file:
+                content = file.read()
+                data = json.loads(content)
+            data[subject].remove(page)
+            data_filtered = str(data).replace("'", '"')
+            with open("subjects/data.json", "w") as file:
+                file.write(data_filtered)
+            self.close()
+
+    def pop_up(self):
+        button = QMessageBox.critical(self, "Warning", "If page is Deleted it will not be able to be recovered! \n"
+                                                       "Are you sure you would like to delete?",
+                                      buttons=QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        if button == QMessageBox.StandardButton.Ok:
+            return True
+
+
 class Rename(QDialog):
     def __init__(self):
         super().__init__()
@@ -173,7 +249,6 @@ class Rename(QDialog):
         self.load_option()
 
     def rename(self):
-        rename_option = ""
         class_picked = self.subject_box_class.itemText(self.subject_box_class.currentIndex())
         rename_option_to = self.rename_to.text()
         rename_option_to = rename_option_to.title()

@@ -1,11 +1,10 @@
 from PyQt6.QtWidgets import (QApplication, QLabel, QLineEdit, QMainWindow, QPushButton,
-                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout, QMessageBox)
+                             QTextEdit, QComboBox, QListWidget, QDialog, QVBoxLayout, QMessageBox, QWidget)
 from PyQt6.QtGui import QAction, QPixmap
+from assistant import ai_bot
 import json
 import sys
 import os
-
-# background: qlineargradient(x1:0 y1:0, x2:1 y2:1, stop:0 #051c2a stop:1 #44315f);
 
 
 class Notebook(QMainWindow):
@@ -14,6 +13,8 @@ class Notebook(QMainWindow):
         self.setWindowTitle("AI Notebook App")
         self.setMinimumSize(1125, 900)
         self.current_note = {"Subject": "", "Page": ""}
+
+        self.window = None
 
         # Create Menu Bar
         menu_bar = self.menuBar()
@@ -37,6 +38,10 @@ class Notebook(QMainWindow):
         create_page_action.triggered.connect(self.load_pages)
         file_menu_item.addAction(save_page_action)
         file_menu_item.addAction(exit_page_action)
+        notebook_ai_action = QAction("Notebook Assistant", self)
+        notebook_ai_action.setShortcut("Ctrl+Q")
+        file_menu_item.addAction(notebook_ai_action)
+        notebook_ai_action.triggered.connect(self.assistant)
 
         # (Edit) Menu Bar
         rename_action = QAction("Rename", self)
@@ -99,6 +104,15 @@ class Notebook(QMainWindow):
         dialog = CreatePage()
         dialog.exec()
 
+    def assistant(self, checked):
+        if self.window is None:
+            self.window = AssistantWindow()
+            self.window.show()
+
+        else:
+            self.window.close()
+            self.window = None
+
     @staticmethod
     def rename():
         dialog = Rename()
@@ -151,6 +165,35 @@ class Notebook(QMainWindow):
         content = self.note_area.toPlainText()
         with open(f"notes/{subject}/{page}", "w") as file:
             file.write(content)
+
+
+class AssistantWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setFixedWidth(300)
+        self.setFixedHeight(900)
+        layout = QVBoxLayout()
+        self.setWindowTitle("Notebook Assistant")
+
+        self.output_area = QTextEdit(self)
+        self.output_area.setReadOnly(True)
+        self.output_area.setGeometry(13, 10, 275, 750)
+        self.input_area = QLineEdit(self)
+        self.input_area.setGeometry(13, 800, 275, 40)
+
+        self.button = QPushButton("Fact Check")
+        self.button.setGeometry(150, 850, 275, 40)
+        layout.addWidget(self.button)
+        self.button.clicked.connect(self.ai)
+
+        self.setLayout(layout)
+
+    def ai(self):
+        input_request = self.input_area.text()
+        output = ai_bot(input_request)
+
+        self.output_area.clear()
+        self.output_area.setText(output)
 
 
 class Delete(QDialog):
